@@ -1,16 +1,16 @@
 # example of QR GWAS
 library(data.table)
-library(tidyverse)
+library(dplyr)
 library(QRank)
 library(quantreg)
 options(scipen = 999)
 
 ## QRANK
-## https://pubmed.ncbi.nlm.nih.gov/28334222/
-## https://CRAN.R-project.org/package=QRank
+## reference => https://pubmed.ncbi.nlm.nih.gov/28334222/
+## source code => https://CRAN.R-project.org/package=QRank
 ## Quantile regression
-## https://doi.org/10.1201/9781315120256
-## https://cran.r-project.org/package=quantreg
+## reference => https://doi.org/10.1201/9781315120256
+## source code => https://cran.r-project.org/package=quantreg
 QRank <- function(gene, snp, cov = NULL, tau = c(0.25, 0.5, 0.75)) {
   ltau = length(tau)
   x = as.matrix(snp)
@@ -48,8 +48,8 @@ QRank <- function(gene, snp, cov = NULL, tau = c(0.25, 0.5, 0.75)) {
 }
 
 ## Cauchy combination
-## https://pubmed.ncbi.nlm.nih.gov/33012899/
-## https://github.com/yaowuliu/ACAT
+## reference => https://pubmed.ncbi.nlm.nih.gov/33012899/
+## source code => https://github.com/yaowuliu/ACAT
 cauchy.meta <- function(pvals) {
   # Check input
   pvals = pvals[!is.na(pvals)]
@@ -80,7 +80,7 @@ qntl = (1:9) / 10
 ## row: individual
 ## column: phenotypic variable
 pheno = fread(file = paste0("example/example.phenotype.tsv"),
-              header = T, sep = "\t", data.table = F, stringsAsFactors = FALSE)
+              header = T, sep = "\t", data.table = F, stringsAsFactors = F)
 #### one phenotype
 # pheno %>% select(PHENOTYPE)
 #### one covariate
@@ -92,7 +92,7 @@ pheno = fread(file = paste0("example/example.phenotype.tsv"),
 ## row: individual
 ## column: variant
 geno = fread(file = paste0("example/example.genotype.tsv"),
-             header = T, sep = "\t", data.table = F, stringsAsFactors = FALSE)
+             header = T, sep = "\t", data.table = F, stringsAsFactors = F)
 geno.mat = as.matrix(geno %>% select(-(FID:PHENOTYPE)))
 
 
