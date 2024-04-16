@@ -15,9 +15,11 @@ dplyr [https://CRAN.R-project.org/package=dplyr](https://CRAN.R-project.org/pack
 
 ## Example
 We provide a toy dataset in [example](/example). 
-The input data are 1) the [genotype matrix](example/example.genotype.tsv) that includes N sample = 503 individuals (column "IID") 
+
+Input files: 
+- A [genotype matrix](example/example.genotype.tsv) that includes N sample = 503 individuals (column "IID") 
 and N variant = 10 SNPs (columns starting with "1-555") from the [1000 Genome Phase 3](https://www.internationalgenome.org/category/phase-3/)
-and 2) the [phenotype table](example/example.phenotype.tsv) that includes one simulated quantitative trait (column "PHENOTYPE") and one simulated covariate (column "COVAR1") for the N sample = 503 individuals (column "IID").
+- A [phenotype table](example/example.phenotype.tsv) that includes one simulated quantitative trait (column "PHENOTYPE") and one simulated covariate (column "COVAR1") for the N sample = 503 individuals (column "IID").
 
 Run the R script [example.qr.R](example.qr.R) to perform QR GWAS (single variant tests) for the phenotype and genotype data in [example](/example). 
 
