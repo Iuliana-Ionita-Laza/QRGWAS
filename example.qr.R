@@ -5,16 +5,34 @@ library(QRank)
 library(quantreg)
 options(scipen = 999)
 
-## QRANK
+## ACAT (Cauchy combination)
+## reference => https://pubmed.ncbi.nlm.nih.gov/33012899/
+## source code => https://github.com/yaowuliu/ACAT
+acat <- function(pvals) {
+  # Check input
+  pvals = pvals[!is.na(pvals)]
+  if (length(pvals) == 0) {
+    return(NA)
+  }
+  # pvals[pvals == 0] = 2.2E-308
+  # Convert to Cauchy
+  cauchy = 1 / (pvals * pi)
+  cauchy[pvals >= 1e-15] = tanpi(0.5 - pvals[pvals >= 1e-15])
+  stats = mean(cauchy)
+  p = pcauchy(q = stats, lower.tail = F)
+  return(p)
+}
+
+## QRank
 ## reference => https://pubmed.ncbi.nlm.nih.gov/28334222/
 ## source code => https://CRAN.R-project.org/package=QRank
 ## Quantile regression
 ## reference => https://doi.org/10.1201/9781315120256
 ## source code => https://cran.r-project.org/package=quantreg
-QRank <- function(gene, snp, cov = NULL, tau = c(0.25, 0.5, 0.75)) {
+QRank <- function(phe, snp, cov = NULL, tau = c(0.25, 0.5, 0.75)) {
   ltau = length(tau)
   x = as.matrix(snp)
-  y = as.matrix(gene)
+  y = as.matrix(phe)
   cov = as.matrix(cov)
   zz = cbind(rep(1, nrow(y)), cov)
   
@@ -36,33 +54,16 @@ QRank <- function(gene, snp, cov = NULL, tau = c(0.25, 0.5, 0.75)) {
   } 
   
   VN2 = matrix(outer(VN,t(xstar)%*% xstar,"*"), nrow = ltau)
-  pvalue1 = pchisq(SN^2/diag(VN2), 1, lower.tail = F)
-  names(pvalue1) = tau
+  pvalue = pchisq(SN^2/diag(VN2), 1, lower.tail = F)
+    
+  # e = solve(chol(VN2))
+  # SN2 = t(e) %*% SN
+  # pvalue.composite = pchisq(sum(SN2^2), ltau, lower.tail = F)
+  pvalue.cauchy = acat(pvalue)
+  names(pvalue) = tau
   
-  e = solve(chol(VN2))
-  SN2 = t(e) %*% SN
-  pvalue = pchisq(sum(SN2^2), ltau, lower.tail = F)
-  
-  result = list(composite.pvalue = pvalue, quantile.specific.pvalue = pvalue1, tau = tau)
+  result = list(tau = tau, quantile.pvalue = pvalue, cauchy.pvalue = pvalue.cauchy)
   return(result)
-}
-
-## Cauchy combination
-## reference => https://pubmed.ncbi.nlm.nih.gov/33012899/
-## source code => https://github.com/yaowuliu/ACAT
-cauchy.meta <- function(pvals) {
-  # Check input
-  pvals = pvals[!is.na(pvals)]
-  if (length(pvals) == 0) {
-    return(NA)
-  }
-  # pvals[pvals == 0] = 2.2E-308
-  # Convert to Cauchy
-  cauchy = 1 / (pvals * pi)
-  cauchy[pvals >= 1e-15] = tanpi(0.5 - pvals[pvals >= 1e-15])
-  stats = mean(cauchy)
-  p = pcauchy(q = stats, lower.tail = F)
-  return(p)
 }
 
 
@@ -99,23 +100,36 @@ geno.mat = as.matrix(geno %>% select(-(FID:PHENOTYPE)))
 
 ## QR single variant test
 set.seed(256)
-df.p = data.frame()
+df.qr = data.frame()
 for (i in 1:ncol(geno.mat)) {
-  p.qr = QRank(gene = pheno %>% select(PHENOTYPE), 
-               cov = pheno %>% select(COVAR1), 
-               snp = geno.mat[, i], 
-               tau = qntl)
-  df.p = rbind(df.p, data.frame(p.qr$quantile.specific.pvalue %>% t()))
+  df.qreg = data.frame(pheno %>% select(PHENOTYPE, COVAR1),
+                       GENOTYPE = geno.mat[, i],
+                       check.names = F, stringsAsFactors = F)
+  fml.qreg = paste0("PHENOTYPE ~ COVAR1 + GENOTYPE")
+  beta = double()
+  for (idx.qntl in 1:length(qntl)) {
+    qreg = rq(data = df.qreg, formula = as.formula(fml.qreg), tau = qntl[idx.qntl], method = "pfn")
+    beta = c(beta, qreg$coefficients["GENOTYPE"])
+  }
+  p = QRank(phe = df.qreg %>% select(PHENOTYPE), 
+            cov = df.qreg %>% select(COVAR1), 
+            snp = df.qreg %>% select(GENOTYPE), 
+            tau = qntl)
+  df.qr = rbind(df.qr, 
+                data.frame(p$cauchy.pvalue,
+                           t(p$quantile.pvalue), 
+                           t(beta))) 
 }
-colnames(df.p) = paste0("P QR ", qntl)
-df.p = df.p %>% mutate(`P QR` = apply(X = df.p, MARGIN = 1, FUN = cauchy.meta), .before = 1)
-df.p = df.p %>% mutate(ID = colnames(geno.mat), .before = 1)
+colnames(df.qr) = c("P_QR",
+                    paste0("P_QR", qntl),
+                    paste0("BETA_QR", qntl))
+df.qr = df.qr %>% mutate(ID = colnames(geno.mat), .before = 1)
 
 
 
 ## QR summary statistics
 ## row: variant
-## column: p-value
-fwrite(x = df.p, file = paste0("example/example.sumstat.tsv"), quote = F, sep = "\t", row.names = F, col.names = T)
+## column: p-value and beta
+fwrite(x = df.qr, file = paste0("example/example.sumstat.tsv"), quote = F, sep = "\t", row.names = F, col.names = T)
 
 
