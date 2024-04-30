@@ -144,7 +144,7 @@ for (idx.geno in 1:ncol(geno.mat)) {
 
 colnames(df.qr) = c("P_QR",
                     paste0("P_QR", qntl),
-                    ifelse(is.effect.estimated, paste0("BETA_QR", qntl), NA)) %>% 
+                    paste0("BETA_QR", qntl)) %>% 
   head(n = 1 + length(qntl) + length(beta))
 df.qr = df.qr %>% mutate(ID = colnames(geno.mat), .before = 1)
 
