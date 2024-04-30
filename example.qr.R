@@ -29,12 +29,11 @@ acat <- function(pvals) {
 ## Quantile regression
 ## reference => https://doi.org/10.1201/9781315120256
 ## source code => https://cran.r-project.org/package=quantreg
-QRank <- function(phe, snp, cov = NULL, tau = c(0.25, 0.5, 0.75)) {
+qrank.test <- function(phe, cov, snp, fit.residual, tau = c(0.25, 0.5, 0.75)) {
   ltau = length(tau)
   x = as.matrix(snp)
   y = as.matrix(phe)
-  cov = as.matrix(cov)
-  zz = cbind(rep(1, nrow(y)), cov)
+  zz = cbind(rep(1, nrow(y)), as.matrix(cov))
   
   VN = matrix(0, nrow = ltau, ncol = ltau) 
   for(i in 1:ltau) {
@@ -42,13 +41,13 @@ QRank <- function(phe, snp, cov = NULL, tau = c(0.25, 0.5, 0.75)) {
       VN[i,j] = min(tau[i], tau[j]) - tau[i] * tau[j]     
     }
   }
-  xstar = lm(x~zz-1)$residual
+  
+  xstar = lm(x ~ zz - 1)$residual
+  
   SN = NULL
   for(i in 1:ltau) {
-    qreg = rq.fit.pfn(zz, y, tau = tau[i])
-    qreg$residual = y - zz %*% as.matrix(qreg$coefficients)
-    qreg$dual = 1 * (qreg$residual > 0)
-    ranks = qreg$dual - (1 - tau[i])
+    dual = 1 * ((fit.residual %>% filter(Quantile == tau[i]) %>% pull(Residual)) > 0)
+    ranks = dual - (1 - tau[i])
     Sn = as.matrix(t(xstar) %*% (ranks))
     SN = c(SN,Sn)
   } 
@@ -99,37 +98,61 @@ geno.mat = as.matrix(geno %>% select(-(FID:PHENOTYPE)))
 
 
 ## QR single variant test
-set.seed(256)
-df.qr = data.frame()
-for (i in 1:ncol(geno.mat)) {
-  df.qreg = data.frame(pheno %>% select(PHENOTYPE, COVAR1),
-                       GENOTYPE = geno.mat[, i],
-                       check.names = F, stringsAsFactors = F)
-  fml.qreg = paste0("PHENOTYPE ~ COVAR1 + GENOTYPE")
-  beta = double()
-  for (idx.qntl in 1:length(qntl)) {
-    qreg = rq(data = df.qreg, formula = as.formula(fml.qreg), tau = qntl[idx.qntl], method = "pfn")
-    beta = c(beta, qreg$coefficients["GENOTYPE"])
-  }
-  p = QRank(phe = df.qreg %>% select(PHENOTYPE), 
-            cov = df.qreg %>% select(COVAR1), 
-            snp = df.qreg %>% select(GENOTYPE), 
-            tau = qntl)
-  df.qr = rbind(df.qr, 
-                data.frame(p$cauchy.pvalue,
-                           t(p$quantile.pvalue), 
-                           t(beta))) 
+#### null model fitting
+set.seed(seed = 256)
+df.res = data.frame()
+fml.null = paste0("PHENOTYPE ~ COVAR1")
+for (idx.qntl in 1:length(qntl)) {
+  fit.null = rq(data = pheno %>% select(PHENOTYPE, COVAR1), 
+                formula = as.formula(fml.null), 
+                tau = qntl[idx.qntl], 
+                method = "pfn")
+  df.res = rbind(df.res,
+                 data.frame(Quantile = qntl[idx.qntl],
+                            pheno %>% select(IID),
+                            Residual = unname(as.matrix(pheno %>% select(PHENOTYPE)) - as.matrix(pheno %>% select(COVAR1) %>% mutate(1, .before = 1)) %*% as.matrix(fit.null$coefficients))))
 }
+
+#### score test
+is.effect.estimated = F # whether estimation of quantile-specific effect size is required
+set.seed(seed = 256)
+df.qr = data.frame()
+for (idx.geno in 1:ncol(geno.mat)) {
+  df.qreg = data.frame(pheno %>% select(PHENOTYPE, COVAR1),
+                       GENOTYPE = geno.mat[, idx.geno],
+                       check.names = F, stringsAsFactors = F)
+  
+  beta = double()
+  if (is.effect.estimated) {
+    fml.qreg = paste0("PHENOTYPE ~ COVAR1 + GENOTYPE")
+    for (idx.qntl in 1:length(qntl)) {
+      qreg = rq(data = df.qreg, formula = as.formula(fml.qreg), tau = qntl[idx.qntl], method = "pfn")
+      beta = c(beta, qreg$coefficients["GENOTYPE"])
+    }
+  }
+
+  p = qrank.test(phe = df.qreg %>% select(PHENOTYPE), 
+                 cov = df.qreg %>% select(COVAR1), 
+                 snp = df.qreg %>% select(GENOTYPE), 
+                 fit.residual = df.res,
+                 tau = qntl)
+  df.qr = rbind(df.qr,
+                data.frame(p$cauchy.pvalue,
+                           t(p$quantile.pvalue),
+                           t(beta)))
+}
+
 colnames(df.qr) = c("P_QR",
                     paste0("P_QR", qntl),
-                    paste0("BETA_QR", qntl))
+                    ifelse(is.effect.estimated, paste0("BETA_QR", qntl), NA)) %>% 
+  head(n = 1 + length(qntl) + length(beta))
 df.qr = df.qr %>% mutate(ID = colnames(geno.mat), .before = 1)
 
 
 
 ## QR summary statistics
 ## row: variant
-## column: p-value and beta
+## column: p-value # and beta
 fwrite(x = df.qr, file = paste0("example/example.sumstat.tsv"), quote = F, sep = "\t", row.names = F, col.names = T)
 
 
