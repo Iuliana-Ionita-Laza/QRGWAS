@@ -83,8 +83,8 @@ pheno = fread(file = paste0("example/example.phenotype.tsv"),
               header = T, sep = "\t", data.table = F, stringsAsFactors = F)
 #### one phenotype
 # pheno %>% select(PHENOTYPE)
-#### one covariate
-# pheno %>% select(COVAR1)
+#### two covariates
+# pheno %>% select(COVAR1, COVAR2)
 
 
 
@@ -101,16 +101,16 @@ geno.mat = as.matrix(geno %>% select(-(FID:PHENOTYPE)))
 #### null model fitting
 set.seed(seed = 256)
 df.res = data.frame()
-fml.null = paste0("PHENOTYPE ~ COVAR1")
+fml.null = paste0("PHENOTYPE ~ COVAR1 + COVAR2")
 for (idx.qntl in 1:length(qntl)) {
-  fit.null = rq(data = pheno %>% select(PHENOTYPE, COVAR1), 
+  fit.null = rq(data = pheno %>% select(PHENOTYPE, COVAR1, COVAR2), 
                 formula = as.formula(fml.null), 
                 tau = qntl[idx.qntl], 
                 method = "pfn")
   df.res = rbind(df.res,
                  data.frame(Quantile = qntl[idx.qntl],
                             pheno %>% select(IID),
-                            Residual = unname(as.matrix(pheno %>% select(PHENOTYPE)) - as.matrix(pheno %>% select(COVAR1) %>% mutate(1, .before = 1)) %*% as.matrix(fit.null$coefficients))))
+                            Residual = unname(as.matrix(pheno %>% select(PHENOTYPE)) - as.matrix(pheno %>% select(COVAR1, COVAR2) %>% mutate(1, .before = 1)) %*% as.matrix(fit.null$coefficients))))
 }
 
 #### score test
@@ -118,13 +118,13 @@ is.effect.estimated = F # whether estimation of quantile-specific effect size is
 set.seed(seed = 256)
 df.qr = data.frame()
 for (idx.geno in 1:ncol(geno.mat)) {
-  df.qreg = data.frame(pheno %>% select(PHENOTYPE, COVAR1),
+  df.qreg = data.frame(pheno %>% select(PHENOTYPE, COVAR1, COVAR2),
                        GENOTYPE = geno.mat[, idx.geno],
                        check.names = F, stringsAsFactors = F)
   
   beta = double()
   if (is.effect.estimated) {
-    fml.qreg = paste0("PHENOTYPE ~ COVAR1 + GENOTYPE")
+    fml.qreg = paste0("PHENOTYPE ~ COVAR1 + COVAR2 + GENOTYPE")
     for (idx.qntl in 1:length(qntl)) {
       qreg = rq(data = df.qreg, formula = as.formula(fml.qreg), tau = qntl[idx.qntl], method = "pfn")
       beta = c(beta, qreg$coefficients["GENOTYPE"])
@@ -132,7 +132,7 @@ for (idx.geno in 1:ncol(geno.mat)) {
   }
 
   p = qrank.test(phe = df.qreg %>% select(PHENOTYPE), 
-                 cov = df.qreg %>% select(COVAR1), 
+                 cov = df.qreg %>% select(COVAR1, COVAR2), 
                  snp = df.qreg %>% select(GENOTYPE), 
                  fit.residual = df.res,
                  tau = qntl)
