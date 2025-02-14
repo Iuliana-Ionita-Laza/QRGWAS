@@ -57,7 +57,7 @@ plink2 \
 --out genotype_scatter_chr1_1_3000000
 ```
 
-This generates a plain text file, "genotype_scatter_chr1_1_3000000.raw", which follows the same format as the [example genotype matrix](example/example.genotype.tsv) we provided. Such file can be loaded into R using the code from [example.qr.R](example.qr.R). By default, PLINK2 exports the additive coding of REF allele to the resulting ".raw" file. If needed, the allele coding can be modified using the [--export-allele](https://www.cog-genomics.org/plink/2.0/data#export) option.
+This generates a plain text file, "genotype_scatter_chr1_1_3000000.raw", which follows the same format as the [example genotype matrix](example/example.genotype.tsv) we provided. Such file can be loaded into R using the code from [example.qr.R](example.qr.R) (replacing example.genotype.tsv with genotype_scatter_chr1_1_3000000.raw). By default, PLINK2 exports the additive coding of REF allele to the resulting ".raw" file. If needed, the allele coding can be modified using the [--export-allele](https://www.cog-genomics.org/plink/2.0/data#export) option.
 
 
 
