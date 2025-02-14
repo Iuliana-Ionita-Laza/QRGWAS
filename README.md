@@ -19,11 +19,12 @@ dplyr [https://CRAN.R-project.org/package=dplyr](https://CRAN.R-project.org/pack
 ## Example
 
 We provide a toy dataset in [example](/example). 
-The input data are 1) the [genotype matrix](example/example.genotype.tsv) that includes N sample = 503 individuals (column "IID") 
-and N variant = 10 SNPs (columns starting with "1-555") from the [1000 Genome Phase 3](https://www.internationalgenome.org/category/phase-3/)
-and 2) the [phenotype table](example/example.phenotype.tsv) that includes one simulated quantitative trait (column "PHENOTYPE") and two simulated covariates (columns "COVAR1" and "COVAR2") for the N sample = 503 individuals (column "IID").
+The input data includes 
+1) the [genotype matrix](example/example.genotype.tsv) that contains N sample = 503 individuals (column "IID") 
+and N variant = 10 SNPs (columns starting with "1-555") from the [1000 Genome Phase 3](https://www.internationalgenome.org/category/phase-3/).
+2) the [phenotype table](example/example.phenotype.tsv) that contains one simulated quantitative trait (column "PHENOTYPE") and two simulated covariates (columns "COVAR1" and "COVAR2") for the N sample = 503 individuals (column "IID").
 
-Run the R script [example.qr.R](example.qr.R) to perform QR GWAS (single variant tests) for the phenotype and genotype data in [example](/example). 
+Run the R script [example.qr.R](example.qr.R) to perform QR GWAS (single variant tests) for the phenotype and genotype data in [example](/example). Set ```is.effect.estimated = T``` to enable the estimation of quantile-specific effect size (disabled by default).
 
 The [expected output](example/example.sumstat.tsv) is a tab-delimited text file with the QR summary statistics. 
 - Column "ID": variant ID from the genotype data.
@@ -57,7 +58,9 @@ plink2 \
 --out genotype_scatter_chr1_1_3000000
 ```
 
-This generates a plain text file, "genotype_scatter_chr1_1_3000000.raw", which follows the same format as the [example genotype matrix](example/example.genotype.tsv) we provided. Such file can be loaded into R using the code from [example.qr.R](example.qr.R) (replacing example.genotype.tsv with genotype_scatter_chr1_1_3000000.raw). By default, PLINK2 exports the additive coding of REF allele to the resulting ".raw" file. If needed, the allele coding can be modified using the [--export-allele](https://www.cog-genomics.org/plink/2.0/data#export) option.
+This generates a plain text file, "genotype_scatter_chr1_1_3000000.raw", which follows the same format as the [example genotype matrix](example/example.genotype.tsv) we provided. Such file can be loaded into R using the code from [example.qr.R](example.qr.R) (replacing example.genotype.tsv with genotype_scatter_chr1_1_3000000.raw). 
+
+By default, PLINK2 exports the additive coding of REF allele to the resulting ".raw" file. If needed, the allele coding can be modified using the [--export-allele](https://www.cog-genomics.org/plink/2.0/data#export) option.
 
 
 
