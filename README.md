@@ -24,13 +24,14 @@ The input data includes
 and N variant = 10 SNPs (columns starting with "1-555") from the [1000 Genome Phase 3](https://www.internationalgenome.org/category/phase-3/).
 2) the [phenotype table](example/example.phenotype.tsv) that contains one simulated quantitative trait (column "PHENOTYPE") and two simulated covariates (columns "COVAR1" and "COVAR2") for the N sample = 503 individuals (column "IID").
 
-Run the R script [example.qr.R](example.qr.R) to perform QR GWAS (single variant tests) for the phenotype and genotype data in [example](/example). Set ```is.effect.estimated = T``` to enable the estimation of quantile-specific effect size (disabled by default).
+Run the R script [example.qr.R](example.qr.R) to perform QR GWAS (single variant association tests) for the phenotype and genotype data in [example](/example). Set ```is.effect.estimated = T``` to enable the estimation of quantile-specific effect sizes (beta) and their corresponding standard errors (SE), which are disabled by default.
 
 The [expected output](example/example.sumstat.tsv) is a tab-delimited text file with the QR summary statistics. 
 - Column "ID": variant ID from the genotype data.
 - Column "P_QR": the integrated QR p-value across multiple quantile levels.
 - Columns from "P_QR0.1" to "P_QR0.9": quantile-specific QR p-value for the quantile levels 0.1, 0.2, ..., 0.9.
-- Columns from "BETA_QR0.1" to "BETA_QR0.9": quantile-specific QR effect size for the quantile levels 0.1, 0.2, ..., 0.9.
+- Columns from "BETA_QR0.1" to "BETA_QR0.9": quantile-specific QR effect size for the quantile levels 0.1, 0.2, ..., 0.9 (```is.effect.estimated = T``` is required).
+- Columns from "SE_QR0.1" to "SE_QR0.9": quantile-specific QR effect size for the quantile levels 0.1, 0.2, ..., 0.9 (```is.effect.estimated = T``` is required).
 
 
 

@@ -114,7 +114,7 @@ for (idx.qntl in 1:length(qntl)) {
 }
 
 #### score test
-is.effect.estimated = F # whether estimation of quantile-specific effect size is required
+is.effect.estimated = F # whether estimation of quantile-specific effect size is required (set to TRUE or T to enable effect size estimation)
 set.seed(seed = 256)
 df.qr = data.frame()
 for (idx.geno in 1:ncol(geno.mat)) {
@@ -123,11 +123,15 @@ for (idx.geno in 1:ncol(geno.mat)) {
                        check.names = F, stringsAsFactors = F)
   
   beta = double()
+  se = double()
   if (is.effect.estimated) {
     fml.qreg = paste0("PHENOTYPE ~ COVAR1 + COVAR2 + GENOTYPE")
     for (idx.qntl in 1:length(qntl)) {
       qreg = rq(data = df.qreg, formula = as.formula(fml.qreg), tau = qntl[idx.qntl], method = "pfn")
+      stat.qreg = summary.rq(qreg, se = "boot")
       beta = c(beta, qreg$coefficients["GENOTYPE"])
+      # beta = c(beta, stat.qreg$coefficients["GENOTYPE", "Value"])
+      se = c(se, stat.qreg$coefficients["GENOTYPE", "Std. Error"])
     }
   }
 
@@ -139,13 +143,15 @@ for (idx.geno in 1:ncol(geno.mat)) {
   df.qr = rbind(df.qr,
                 data.frame(p$cauchy.pvalue,
                            t(p$quantile.pvalue),
-                           t(beta)))
+                           t(beta),
+                           t(se)))
 }
 
 colnames(df.qr) = c("P_QR",
                     paste0("P_QR", qntl),
-                    paste0("BETA_QR", qntl)) %>% 
-  head(n = 1 + length(qntl) + length(beta))
+                    paste0("BETA_QR", qntl),
+                    paste0("SE_QR", qntl)) %>% 
+  head(n = 1 + length(qntl) + length(beta) + length(se))
 df.qr = df.qr %>% mutate(ID = colnames(geno.mat), .before = 1)
 
 
