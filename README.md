@@ -65,7 +65,15 @@ By default, PLINK2 exports the additive coding of REF allele to the resulting ".
 
 
 
+## Summary statistics
+
+The QR GWAS summary statistics for 62 quantitative traits in the UK Biobank are publicly available on Zenodo at [https://doi.org/10.5281/zenodo.11095249](https://doi.org/10.5281/zenodo.11095249) and [https://doi.org/10.5281/zenodo.19503042](https://doi.org/10.5281/zenodo.19503042). 
+
+
+
 ## Citation
+
+If you use the code from this repository or the summary statistics available on Zenodo in your research, please cite the following publication:
 
 Chen Wang, Tianying Wang, Krzysztof Kiryluk, Ying Wei, Hugues Aschard, and Iuliana Ionita-Laza. [Genome-wide discovery for biomarkers using quantile regression at biobank scale](https://www.nature.com/articles/s41467-024-50726-x). Nature Communications, 15(1), 6460.
 
